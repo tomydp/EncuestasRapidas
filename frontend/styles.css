@@ -1,0 +1,130 @@
+/* General */
+body {
+  font-family: system-ui, Segoe UI, Roboto, Arial, sans-serif;
+  max-width: 880px;
+  margin: 24px auto;
+  padding: 0 16px;
+  background: #f9f9fb;
+  color: #222;
+}
+
+h1, h2 {
+  text-align: center;
+  margin-bottom: 16px;
+  color: #333;
+}
+
+/* Formulario */
+form {
+  display: grid;
+  gap: 16px;
+  background: #fff;
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+}
+
+.row {
+  display: grid;
+  gap: 6px;
+}
+
+fieldset {
+  border: 1px solid #ddd;
+  border-radius: 10px;
+  padding: 12px;
+  background: #fafafa;
+}
+
+label {
+  font-weight: 500;
+}
+
+/* Inputs */
+input, textarea, select, button {
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  font-size: 1rem;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+input:focus, textarea:focus, select:focus {
+  border-color: #4a90e2;
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(74,144,226,0.2);
+}
+
+/* Botones */
+button {
+  cursor: pointer;
+  background: #f0f0f0;
+  border: none;
+  transition: background 0.2s;
+}
+
+button:hover {
+  background: #e0e0e0;
+}
+
+button.primary {
+  background: #4a90e2;
+  color: #fff;
+}
+
+button.primary:hover {
+  background: #357ab8;
+}
+
+button.secondary {
+  background: #eee;
+}
+
+/* Mensajes */
+.error {
+  color: #b00020;
+  font-size: 0.9rem;
+}
+
+.ok {
+  color: #0a7a2f;
+  margin-top: 8px;
+}
+
+.hint {
+  font-size: 0.85rem;
+  color: #555;
+}
+
+.options-preview {
+  background: #f7f7f7;
+  border: 1px dashed #ccc;
+  padding: 8px;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  color: #444;
+}
+
+/* Lista de encuestas */
+.polls {
+  margin-top: 16px;
+  display: grid;
+  gap: 16px;
+}
+
+.polls > div {
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+}
+
+.polls h3 {
+  margin: 0 0 8px;
+}
+
+.polls .hint {
+  font-size: 0.8rem;
+  color: #777;
+}
