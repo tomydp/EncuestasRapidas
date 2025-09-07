@@ -1,19 +1,26 @@
-# Node
+# Dependencias
+node_modules/
 **/node_modules/
-**/dist/
-**/build/
-**/.env
+
+# Builds / artefactos
+dist/
+build/
+coverage/
+.next/
+out/
+.tmp/
+
+# Logs
 npm-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 
-# OS / editores
-.DS_Store
-Thumbs.db
-.vscode/
-.idea/
+# Env
+.env
+.env.*
+
 # SQLite
-backend/data/*.db*
 *.db
 *.db-shm
 *.db-wal
+backend/data/*.db*
