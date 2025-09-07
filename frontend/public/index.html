@@ -2,56 +2,21 @@
 <html lang="es">
 <head>
   <meta charset="utf-8" />
-  <title>Encuestas Rápidas</title>
+  <title>Encuestas • Votar</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <link rel="stylesheet" href="styles.css" />
-  <!-- DOMPurify para sanitización XSS en el cliente -->
-  <script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.7/dist/purify.min.js"></script>
+  <link rel="stylesheet" href="../styles.css" />
 </head>
 <body>
-  <h1>Crear encuesta</h1>
+  <!-- Usuario + salir: fijo arriba derecha -->
+  <div class="user-actions">
+    <span id="who" class="hint"></span>
+    <button id="btnLogout" class="secondary">Salir</button>
+  </div>
 
-  <form id="pollForm" novalidate>
-    <div class="row">
-      <label for="question">Pregunta</label>
-      <input id="question" name="question" type="text" required placeholder="¿Cuál es tu…?" maxlength="140" />
-      <div class="hint">10–140 caracteres. Sin etiquetas HTML.</div>
-      <div class="error" id="errQuestion"></div>
-    </div>
+  <!-- Título centrado -->
+  <h1 class="page-title">Encuestas activas</h1>
 
-    <div class="row">
-      <label for="options">Opciones (una por línea)</label>
-      <textarea id="options" name="options" rows="6" required placeholder="Opción 1&#10;Opción 2"></textarea>
-      <div class="hint">Mín. 2, máx. 10. Cada una de 1–50 caracteres. Sin “&lt; &gt;”.</div>
-      <div class="error" id="errOptions"></div>
-      <div class="options-preview" id="optionsPreview"></div>
-    </div>
-
-    <fieldset>
-      <legend>Tipo de respuesta</legend>
-      <label><input type="radio" name="responseType" value="single" checked /> Respuesta única</label>
-      <label><input type="radio" name="responseType" value="multiple" /> Múltiples respuestas</label>
-      <div class="error" id="errResponseType"></div>
-    </fieldset>
-
-    <div class="row">
-      <label for="closeDate">Fecha de cierre</label>
-      <input id="closeDate" name="closeDate" type="date" required />
-      <div class="hint">Debe ser futura.</div>
-      <div class="error" id="errCloseDate"></div>
-    </div>
-
-    <input type="hidden" id="voteCount" name="voteCount" value="9999" />
-
-    <button type="submit" class="primary">Guardar encuesta</button>
-    <div id="result" class="ok"></div>
-  </form>
-
-  <hr />
-
-  <h2>Encuestas activas</h2>
-
-  <div class="row search-row">
+  <div class="search-row">
     <input id="search" type="text" placeholder="Buscar por pregunta..." />
     <button id="btnSearch" type="button">Buscar</button>
     <button id="btnReload" type="button" class="secondary">Recargar</button>
@@ -59,6 +24,13 @@
 
   <div id="pollsList" class="polls"></div>
 
+  <div id="toast"></div>
+
+  <script src="../auth/session.js"></script>
+  <script src="../mock-api.js"></script> <!-- quitar cuando uses backend real -->
+  <script src="../seed-demo.js"></script>  <!-- solo para desarrollo -->
   <script src="./app.js"></script>
 </body>
+
+
 </html>

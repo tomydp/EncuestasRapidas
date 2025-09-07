@@ -1,249 +1,220 @@
-const $ = (s) => document.querySelector(s);
+// ===================== Sesión =====================
+const s = Auth.require(); // exige estar logueado
+document.querySelector("#who").textContent = s.user?.name || s.user?.email;
+document.querySelector("#btnLogout").onclick = () => {
+  Auth.clear();
+  location.href = "../auth/login.html";
+};
 
-const questionRe = /^[\p{L}\p{N}\s.,;:?!¡¿'"()-]{10,140}$/u;
-const optionLineRe = /^[^<>]{1,50}$/; // sin < > y <= 50 chars
-const validResponseTypes = ["single", "multiple"];
+// ===================== Utilidades =====================
+const $ = (q) => document.querySelector(q);
+const API = typeof window.API === "string" ? window.API : "http://localhost:3000";
 
-function futureDateISO(dateStr) {
-  const d = new Date(dateStr + "T00:00:00");
-  if (Number.isNaN(d.getTime())) return false;
-  const today = new Date();
-  today.setHours(0,0,0,0);
-  return d.getTime() > today.getTime();
+function isClosed(iso) {
+  return new Date() > new Date(iso + "T23:59:59");
+}
+function timeLeft(iso) {
+  const end = new Date(iso + "T23:59:59"), now = new Date();
+  let d = Math.max(0, end - now);
+  if (!d) return "cerró";
+  const D = Math.floor(d / 86400000); d -= D * 86400000;
+  const H = Math.floor(d / 3600000);  d -= H * 3600000;
+  const M = Math.floor(d / 60000);
+  if (D > 0) return `${D} día${D > 1 ? "s" : ""} ${H}h`;
+  if (H > 0) return `${H}h ${M}m`;
+  return `${M} min`;
 }
 
-function sanitizeText(t) {
-  // Sanitiza y además quita espacios extremos y normaliza múltiples espacios
-  const clean = DOMPurify.sanitize(t, { ALLOWED_TAGS: [], ALLOWED_ATTR: [] });
-  return clean.trim().replace(/\s{2,}/g, " ");
+// ===================== Toast =====================
+const toastBox = $("#toast");
+function showToast(msg, type = "ok") {
+  const el = document.createElement("div");
+  el.className = "toast" + (type === "error" ? " error" : "");
+  el.textContent = msg;
+  toastBox.appendChild(el);
+  setTimeout(() => el.remove(), 2600);
 }
 
-function validateOptions(raw) {
-  // Split por líneas no vacías
-  const lines = raw.split("\n").map(s => sanitizeText(s)).filter(Boolean);
-  if (lines.length < 2 || lines.length > 10) {
-    return { ok:false, msg:"Debe haber entre 2 y 10 opciones.", lines:[] };
+// ===================== Skeleton =====================
+const pollsList = $("#pollsList");
+function showSkeleton(n = 6) {
+  pollsList.innerHTML = "";
+  for (let i = 0; i < n; i++) {
+    const sk = document.createElement("div");
+    sk.className = "skeleton";
+    sk.innerHTML = `
+      <div class="s-line" style="width:60%"></div>
+      <div class="s-line" style="width:30%"></div>
+      <div class="s-line" style="width:90%"></div>
+      <div class="s-line" style="width:75%"></div>
+    `;
+    pollsList.appendChild(sk);
   }
-  for (const line of lines) {
-    if (!optionLineRe.test(line)) {
-      return { ok:false, msg:`Opción inválida: "${line}"`, lines:[] };
-    }
-  }
-  return { ok:true, msg:"", lines:[...new Set(lines)] }; // deduplicadas
 }
 
-function showOptionsPreview(lines) {
-  $("#optionsPreview").textContent = lines.length ? `Vista previa: ${lines.join(" | ")}` : "";
+// ===================== Recibos de voto =====================
+// Guarda QUÉ opciones votó la persona por encuesta, para:
+// 1) Bloquear doble voto en UI y 2) Dejar marcadas sus opciones
+const VOTES_KEY = "__polls_voted__";
+
+const readVotes = () => { try { return JSON.parse(localStorage.getItem(VOTES_KEY) || "{}"); } catch { return {}; } };
+const writeVotes = (m) => localStorage.setItem(VOTES_KEY, JSON.stringify(m));
+
+function getMyVoteValues(userId, pollId) {
+  const m = readVotes();
+  return m?.[userId]?.[pollId]?.values || null;   // array de strings o null
+}
+function hasVoted(userId, pollId) {
+  return !!getMyVoteValues(userId, pollId);
+}
+function markVoted(userId, pollId, values) {
+  const m = readVotes();
+  m[userId] = m[userId] || {};
+  m[userId][pollId] = { values: Array.from(new Set(values)) };
+  writeVotes(m);
 }
 
-$("#options").addEventListener("input", (e) => {
-  const raw = e.target.value;
-  const v = validateOptions(raw);
-  $("#errOptions").textContent = v.ok ? "" : v.msg;
-  showOptionsPreview(v.ok ? v.lines : []);
-});
-
-$("#pollForm").addEventListener("submit", async (e) => {
-  e.preventDefault();
-
-  // Reset errores
-  $("#errQuestion").textContent = "";
-  $("#errOptions").textContent = "";
-  $("#errResponseType").textContent = "";
-  $("#errCloseDate").textContent = "";
-  $("#result").textContent = "";
-
-  // Leer y sanitizar
-  const question = sanitizeText($("#question").value);
-  const optionsRaw = $("#options").value;
-  const responseType = document.querySelector('input[name="responseType"]:checked')?.value;
-  const closeDate = $("#closeDate").value;
-
-  // Validaciones frontend
-  if (!questionRe.test(question)) {
-    $("#errQuestion").textContent = "Pregunta inválida (10–140, sin HTML).";
-    return;
-  }
-
-  const opts = validateOptions(optionsRaw);
-  if (!opts.ok) {
-    $("#errOptions").textContent = opts.msg;
-    return;
-  }
-
-  if (!validResponseTypes.includes(responseType)) {
-    $("#errResponseType").textContent = "Tipo de respuesta inválido.";
-    return;
-  }
-
-  if (!futureDateISO(closeDate)) {
-    $("#errCloseDate").textContent = "La fecha debe ser futura.";
-    return;
-  }
-
-  // Payload seguro (el backend ignorará cualquier intento de enviar voteCount)
-  const payload = {
-    question,
-    options: opts.lines,
-    responseType,
-    closeDate,
-    // voteCount enviado por consigna, pero lo ignorará el backend
-    voteCount: $("#voteCount").value
-  };
-
+// ===================== Carga / listado =====================
+async function loadPolls(q = "") {
+  showSkeleton();
   try {
-    const res = await fetch("http://localhost:3000/api/polls", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload)
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data?.error || "Error desconocido");
-    $("#result").textContent = `Encuesta creada con id ${data.id}.`;
-    // limpiar
-    $("#pollForm").reset();
-    showOptionsPreview([]);
-  } catch (err) {
-    $("#result").textContent = "";
-    $("#errQuestion").textContent = err.message;
+    const url = q ? `${API}/api/polls?q=${encodeURIComponent(q)}` : `${API}/api/polls`;
+    const res = await fetch(url);
+    const polls = await res.json();
+    renderPolls(polls);
+  } catch (e) {
+    pollsList.innerHTML = `<div class="empty"><span class="emo">😵‍💫</span>Error al cargar encuestas.</div>`;
   }
-});
-
-// -------- LISTADO Y VOTO --------
-const API_BASE = "http://localhost:3000";
-
-async function loadPolls(query = "") {
-  const url = query ? `${API_BASE}/api/polls?q=${encodeURIComponent(query)}` 
-                    : `${API_BASE}/api/polls`;
-  const res = await fetch(url);
-  const polls = await res.json();
-  renderPolls(polls);
 }
 
 function renderPolls(polls) {
-  const cont = $("#pollsList");
-  cont.innerHTML = "";
+  pollsList.innerHTML = "";
   if (!polls.length) {
-    cont.innerHTML = "<p>No hay encuestas.</p>";
+    pollsList.innerHTML = `<div class="empty"><span class="emo">🗳️</span>No hay encuestas.</div>`;
     return;
   }
 
   for (const p of polls) {
+    const total = p.options.reduce((a, o) => a + (o.votes || 0), 0);
     const closed = isClosed(p.closeDateISO);
+    const already = hasVoted(s.user.id, p.id);
+    const myVals = getMyVoteValues(s.user.id, p.id) || [];
+
     const card = document.createElement("div");
-    card.style.border = "1px solid #ddd";
-    card.style.borderRadius = "10px";
-    card.style.padding = "12px";
-    card.style.marginBottom = "12px";
+    card.className = "card";
 
-    const title = document.createElement("h3");
-    title.textContent = p.question;
+    // Header
+    const header = document.createElement("div");
+    header.innerHTML = `
+      <h3>${p.question}</h3>
+      <div class="hint">
+        ID ${p.id} • Tipo: ${p.responseType} • Cierra: ${p.closeDateISO}
+        ${closed ? `<span class="chip red">CERRADA</span>`
+                 : `<span class="chip gray">Faltan ${timeLeft(p.closeDateISO)}</span>`}
+        ${already ? ` <span class="chip">Ya votaste</span>` : ``}
+      </div>
+    `;
+    card.appendChild(header);
 
-    const meta = document.createElement("div");
-    meta.className = "hint";
-    meta.textContent = `ID ${p.id} • Tipo: ${p.responseType} • Cierra: ${p.closeDateISO} ${closed ? "• (CERRADA)" : ""}`;
-
+    // Opciones
     const form = document.createElement("div");
     form.style.marginTop = "8px";
 
-    // Inputs de opciones
-    if (p.responseType === "single") {
-      p.options.forEach(opt => {
-        const label = document.createElement("label");
-        label.style.display = "block";
-        const input = document.createElement("input");
-        input.type = "radio";
-        input.name = `opt-${p.id}`;
-        input.value = opt.text;
-        label.appendChild(input);
-        label.appendChild(document.createTextNode(" " + opt.text + `  (${opt.votes})`));
-        form.appendChild(label);
-      });
-    } else {
-      p.options.forEach(opt => {
-        const label = document.createElement("label");
-        label.style.display = "block";
-        const input = document.createElement("input");
-        input.type = "checkbox";
-        input.name = `opt-${p.id}`;
-        input.value = opt.text;
-        label.appendChild(input);
-        label.appendChild(document.createTextNode(" " + opt.text + `  (${opt.votes})`));
-        form.appendChild(label);
-      });
+    const name = `opt-${p.id}`;
+    const inputType = p.responseType === "single" ? "radio" : "checkbox";
+
+    for (const opt of p.options) {
+      const pct = total > 0 ? Math.round((opt.votes / total) * 100) : 0;
+
+      const row = document.createElement("div");
+      row.className = "option";
+
+      const input = document.createElement("input");
+      input.type = inputType;
+      input.name = name;
+      input.value = opt.text;
+
+      // Si ya votó y esta opción fue elegida, dejarla marcada
+      if (already && myVals.includes(opt.text)) {
+        input.checked = true;
+        row.classList.add("myvote"); // estilo opcional
+      }
+
+      input.disabled = closed || already;
+
+      const middle = document.createElement("div");
+      const label = document.createElement("div"); label.textContent = opt.text;
+      const barWrap = document.createElement("div"); barWrap.className = "bar-wrap";
+      const bar = document.createElement("div"); bar.className = "bar"; bar.style.width = pct + "%";
+      barWrap.appendChild(bar);
+      middle.append(label, barWrap);
+
+      const pctEl = document.createElement("div");
+      pctEl.className = "pct";
+      pctEl.textContent = `${pct}%`;
+
+      row.append(input, middle, pctEl);
+      form.appendChild(row);
     }
 
-    const btnVote = document.createElement("button");
-    btnVote.textContent = "Votar";
-    btnVote.style.marginTop = "8px";
-    btnVote.disabled = closed;
-
+    // Acciones
+    const actions = document.createElement("div");
+    const btn = document.createElement("button");
+    btn.textContent = "Votar";
+    btn.disabled = closed || already;
     const msg = document.createElement("div");
     msg.className = "error";
-    msg.style.marginTop = "6px";
+    msg.style.marginLeft = "8px";
+    actions.append(btn, msg);
 
-    btnVote.addEventListener("click", async () => {
+    btn.onclick = async () => {
       msg.textContent = "";
       try {
-        let payload;
+        if (already) { msg.textContent = "Ya votaste esta encuesta."; return; }
+
+        let payload, chosenValues;
+
         if (p.responseType === "single") {
-          const sel = document.querySelector(`input[name="opt-${p.id}"]:checked`);
-          if (!sel) {
-            msg.textContent = "Elegí una opción.";
-            return;
-          }
+          const sel = document.querySelector(`input[name="${name}"]:checked`);
+          if (!sel) { msg.textContent = "Elegí una opción."; return; }
+          chosenValues = [sel.value];
           payload = { option: sel.value };
         } else {
-          const checks = [...document.querySelectorAll(`input[name="opt-${p.id}"]:checked`)];
-          const values = checks.map(c => c.value);
-          if (!values.length) {
-            msg.textContent = "Elegí al menos una opción.";
-            return;
-          }
-          payload = { options: values };
+          const vals = [...document.querySelectorAll(`input[name="${name}"]:checked`)].map(i => i.value);
+          if (!vals.length) { msg.textContent = "Elegí al menos una opción."; return; }
+          chosenValues = vals;
+          payload = { options: vals };
         }
 
-        const res = await fetch(`${API_BASE}/api/polls/${p.id}/vote`, {
+        const r = await fetch(`${API}/api/polls/${p.id}/vote`, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            // si usás backend real con auth tipo Bearer:
+            "Authorization": s.token ? "Bearer " + s.token : undefined
+          },
           body: JSON.stringify(payload)
         });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data?.error || "No se pudo votar");
-        // Recargar listado para ver los nuevos contadores
-        await loadPolls($("#search").value.trim());
-      } catch (err) {
-        msg.textContent = err.message;
-      }
-    });
+        const d = await r.json();
+        if (!r.ok) throw new Error(d?.error || "No se pudo votar");
 
-    card.appendChild(title);
-    card.appendChild(meta);
-    card.appendChild(form);
-    card.appendChild(btnVote);
-    card.appendChild(msg);
-    cont.appendChild(card);
+        // Guardar qué opciones marcó este usuario para esta encuesta
+        markVoted(s.user.id, p.id, chosenValues);
+
+        showToast("¡Voto registrado!");
+        await loadPolls($("#search").value.trim());
+      } catch (e) {
+        msg.textContent = e.message;
+        showToast(e.message, "error");
+      }
+    };
+
+    card.append(form, actions);
+    pollsList.appendChild(card);
   }
 }
 
-function isClosed(closeDateISO) {
-  const now = new Date();
-  const closes = new Date(closeDateISO + "T23:59:59");
-  return now > closes;
-}
-
-// Controles de búsqueda/recarga
-$("#btnSearch").addEventListener("click", () => {
-  const q = $("#search").value.trim();
-  loadPolls(q);
-});
-$("#btnReload").addEventListener("click", () => {
-  $("#search").value = "";
-  loadPolls();
-});
-
-// Cargar al abrir la página
-document.addEventListener("DOMContentLoaded", () => {
-  loadPolls();
-});
-
+// ===================== Controles =====================
+$("#btnSearch").onclick = () => loadPolls($("#search").value.trim());
+$("#btnReload").onclick = () => { $("#search").value = ""; loadPolls(); };
+document.addEventListener("DOMContentLoaded", () => loadPolls());

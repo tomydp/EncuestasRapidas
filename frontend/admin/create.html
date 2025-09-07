@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <title>Crear encuesta • Backoffice</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="../styles.css" />
+  <script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.7/dist/purify.min.js"></script>
+</head>
+<body>
+  <header class="bar">
+    <h1>Crear encuesta</h1>
+    <div>
+      <span id="who"></span>
+      <button id="btnLogout" class="secondary">Salir</button>
+    </div>
+  </header>
+
+  <form id="pollForm" novalidate>
+    <div class="row">
+      <label for="question">Pregunta</label>
+      <input id="question" type="text" required maxlength="140" placeholder="¿Cuál es tu…?" />
+      <div class="hint">10–140 caracteres. Sin HTML.</div>
+      <div class="error" id="errQuestion"></div>
+    </div>
+
+    <div class="row">
+      <label for="options">Opciones (una por línea)</label>
+      <textarea id="options" rows="6" required placeholder="Opción 1&#10;Opción 2"></textarea>
+      <div class="hint">Mín. 2, máx. 10. Cada una 1–50 caracteres.</div>
+      <div class="error" id="errOptions"></div>
+      <div id="optionsPreview" class="options-preview"></div>
+    </div>
+
+    <fieldset>
+      <legend>Tipo de respuesta</legend>
+      <label><input type="radio" name="responseType" value="single" checked /> Única</label>
+      <label><input type="radio" name="responseType" value="multiple" /> Múltiple</label>
+      <div class="error" id="errResponseType"></div>
+    </fieldset>
+
+    <div class="row">
+      <label for="closeDate">Fecha de cierre</label>
+      <input id="closeDate" type="date" required />
+      <div class="hint">Debe ser futura.</div>
+      <div class="error" id="errCloseDate"></div>
+    </div>
+
+    <button class="primary" type="submit">Guardar encuesta</button>
+    <div id="result" class="ok"></div>
+  </form>
+
+  <script src="../auth/session.js"></script>
+  <script src="../mock-api.js"></script>
+  <script src="./create.js"></script>
+  <script src="../seed-admin.js"></script>     <!-- NUEVO: crea el admin si no existe -->
+<script>
+  // Solo admin puede entrar
+  const s = Auth.requireRole('admin');
+  // (opcional) mostrar quién es
+  document.addEventListener('DOMContentLoaded', () => {
+    const el = document.querySelector('#who');
+    if (el) el.textContent = s.user?.name || s.user?.email;
+  });
+</script>
+</body>
+</html>

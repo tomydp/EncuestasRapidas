@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <title>Registro • Cliente</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="../styles.css" />
+</head>
+<body class="auth">
+  <form id="f" novalidate>
+  <h1>Crear cuenta</h1>
+    <div class="row"><label>Nombre</label><input id="name" required maxlength="60" /></div>
+    <div class="row"><label>Email</label><input id="email" type="email" required /></div>
+    <div class="row"><label>Contraseña</label><input id="pass" type="password" required /></div>
+    <div class="row"><label>Repetir contraseña</label><input id="pass2" type="password" required /></div>
+    <button type="submit" class="primary">Registrarme</button>
+    <div id="err" class="error"></div>
+    <p class="hint">¿Ya tenés cuenta? <a href="./login.html">Iniciar sesión</a></p>
+  </form>
+  <script src="./session.js"></script>
+  <script src="../mock-api.js"></script>
+  <script src="./register.js"></script>
+</body>
+</html>

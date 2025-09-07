@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <title>Login</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="../styles.css" />
+</head>
+<body class="auth">
+  <form id="f" novalidate>
+    <h1>Iniciar sesión</h1>
+    <div class="row"><label>Email</label><input id="email" type="email" required /></div>
+    <div class="row"><label>Contraseña</label><input id="pass" type="password" required /></div>
+    <button type="submit" class="primary">Entrar</button>
+    <div id="err" class="error"></div>
+    <p class="hint">¿No tenés cuenta? <a href="./register.html">Registrate</a></p>
+  </form>
+  <script src="./session.js"></script>
+  <script src="../mock-api.js"></script>
+  <script src="../seed-admin.js"></script>   <!-- <- ANTES de login.js -->
+  <script src="./login.js"></script>
+</body>
+</html>
