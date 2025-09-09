@@ -19,7 +19,7 @@ document.querySelector("#f").addEventListener("submit", async (e)=>{
       // Redirigir según rol
       const next = new URLSearchParams(location.search).get("next");
       if (d.user?.role === "admin") {
-        location.href = "../admin/create.html";
+        location.href = "../admin/dashboard.html";
       } else {
         location.href = next || "../public/index.html";
       }
