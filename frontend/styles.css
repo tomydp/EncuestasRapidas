@@ -125,14 +125,6 @@ button:disabled{ opacity:.6; cursor:not-allowed; }
 }
 
 /* ========== Top bar y búsqueda ========== */
-.bar{
-  width:min(1100px, 100%);     /* +ancho del contenedor superior */
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:12px;
-  margin-bottom:16px;
-}
 .search-row{
   width:min(640px, 100%);      /* +ancho del buscador */
   display:grid;
@@ -294,6 +286,98 @@ body.auth h1{
   }
 }
 
+/* ===== Admin dashboard (si mantenés .poll-card/.option-line) ===== */
+.poll-card{
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 18px;
+  box-shadow: 0 8px 18px rgba(0,0,0,.05);
+}
 
+.poll-card h3{
+  margin: 0 0 8px;
+  font-size: 1.15rem;
+}
 
+.poll-card .hint{
+  color: var(--muted);
+  font-size: .92rem;
+  margin-bottom: 8px;
+}
 
+.poll-card.closed{
+  opacity: .85;
+  background: #fafafa;
+}
+
+/* Lista de opciones (resultado) */
+.poll-card .options{
+  display: grid;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.option-line{
+  display: grid;
+  grid-template-columns: 1fr minmax(160px, 1fr) auto; /* etiqueta | barra | número */
+  align-items: center;
+  gap: 12px;
+}
+
+.option-line > span{
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.option-line .bar{
+  height: 12px;
+  background: #eef2f7;
+  border-radius: 999px;
+  position: relative;
+  overflow: hidden;
+}
+
+.option-line .fill{
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 0%;
+  height: 100%;
+  background: var(--primary);
+  border-radius: 999px;
+  transition: width .35s ease;
+}
+
+.option-line .right{
+  font-variant-numeric: tabular-nums;
+  min-width: 64px;
+  text-align: right;
+  color: #374151;
+  font-size: .98rem;
+}
+
+/* Acciones de cada card */
+.poll-card .actions{
+  display: flex;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+@media (max-width: 560px){
+  .option-line{
+    grid-template-columns: 1fr 1fr auto;
+  }
+}
+
+/* ahora */
+.topbar{
+  width:min(1100px, 100%);
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  margin-bottom:16px;
+}
+.topbar h1{ margin: 0; }
+.topbar > div{ display:inline-flex; align-items:center; gap:10px; }
