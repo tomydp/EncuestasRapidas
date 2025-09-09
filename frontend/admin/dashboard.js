@@ -84,16 +84,6 @@ function render(polls) {
     const actions = document.createElement('div');
     actions.className = 'actions';
 
-    const btnClose = document.createElement('button');
-    btnClose.textContent = closed ? "Re-cerrar" : "Cerrar hoy";
-    btnClose.className = 'secondary';
-    btnClose.onclick = async () => {
-      try {
-        await fetchJSON(`${API_ADMIN}/polls/${p.id}/close`, { method: "PATCH", body: JSON.stringify({}) });
-        await load();
-      } catch (e) { alert(e.message); }
-    };
-
     const btnDelete = document.createElement('button');
     btnDelete.textContent = "Eliminar";
     btnDelete.onclick = async () => {
@@ -104,7 +94,6 @@ function render(polls) {
       } catch (e) { alert(e.message); }
     };
 
-    actions.appendChild(btnClose);
     actions.appendChild(btnDelete);
 
     card.appendChild(h3);
